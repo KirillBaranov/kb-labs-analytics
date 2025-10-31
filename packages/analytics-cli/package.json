@@ -1,0 +1,61 @@
+{
+  "name": "@kb-labs/analytics-cli",
+  "version": "0.1.0",
+  "description": "KB Labs Analytics - CLI commands",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "author": {
+    "name": "Kirill Baranov",
+    "url": "https://github.com/kirill-baranov"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kirill-baranov/kb-labs-analytics.git",
+    "directory": "packages/analytics-cli"
+  },
+  "kb-labs": {
+    "cli": {
+      "manifest": "./dist/cli.manifest.js"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run -c ../../vitest.config.ts",
+    "test:watch": "vitest -c ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@kb-labs/analytics-core": "link:../analytics-core",
+    "@kb-labs/analytics-sdk-node": "link:../analytics-sdk-node",
+    "@kb-labs/core": "link:../../../kb-labs-core",
+    "@kb-labs/shared-cli-ui": "link:../../../kb-labs-shared/packages/cli-ui",
+    "@kb-labs/cli-commands": "link:../../../kb-labs-cli/packages/commands"
+  },
+  "devDependencies": {
+    "@kb-labs/devkit": "link:../../../kb-labs-devkit",
+    "@types/node": "^24.7.0",
+    "rimraf": "^6",
+    "tsup": "^8",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}
+
