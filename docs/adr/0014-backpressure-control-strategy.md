@@ -1,8 +1,10 @@
 # ADR-0014: Backpressure Control Strategy
 
-**Date:** 2025-10-31  
-**Status:** Accepted  
+**Date:** 2025-10-31
+**Status:** Accepted
 **Deciders:** KB Labs Team
+**Last Reviewed:** 2025-11-03
+**Tags:** [performance, architecture]
 
 ## Context
 

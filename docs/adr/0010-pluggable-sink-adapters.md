@@ -1,8 +1,10 @@
 # ADR-0010: Pluggable Sink Adapters
 
-**Date:** 2025-10-31  
-**Status:** Accepted  
+**Date:** 2025-10-31
+**Status:** Accepted
 **Deciders:** KB Labs Team
+**Last Reviewed:** 2025-11-03
+**Tags:** [architecture, integration, data]
 
 ## Context
 
