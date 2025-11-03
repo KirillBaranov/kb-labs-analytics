@@ -40,13 +40,24 @@ export async function emit(event: Partial<AnalyticsEventV1>): Promise<EmitResult
 /**
  * Create a run scope for grouping events
  */
-export function runScope(options?: {
-  runId?: string;
-  actor?: EventActor;
-  ctx?: EventContext;
-}): RunScope {
+export async function runScope(
+  options: {
+    runId?: string;
+    actor?: EventActor;
+    ctx?: EventContext;
+  },
+  fn: (emit: (event: Partial<AnalyticsEventV1>) => Promise<EmitResult>) => Promise<unknown>
+): Promise<unknown> {
   const analytics = getAnalytics();
-  return analytics.createRunScope(options?.runId, options?.actor, options?.ctx);
+  const scope = analytics.createRunScope(options?.runId, options?.actor, options?.ctx);
+  try {
+    const result = await fn(scope.emit);
+    await scope.finish();
+    return result;
+  } catch (error) {
+    await scope.finish();
+    throw error;
+  }
 }
 
 /**
