@@ -10,7 +10,7 @@ export default defineConfig({
     'sinks/s3': 'src/sinks/s3.ts',
     'sinks/sqlite': 'src/sinks/sqlite.ts',
   },
-  external: [/^@kb-labs\//, 'node:fs', 'node:path'],
-  skipNodeModulesBundle: true,
+  tsconfig: "tsconfig.build.json", // Use build-specific tsconfig without paths
+  // nodePreset already includes all workspace packages as external via tsup.external.json
 });
 
