@@ -2,59 +2,61 @@
  * Flush command - Force flush buffer to sinks
  */
 
-import type { Command } from '@kb-labs/cli-commands';
-import { box, keyValue, formatTiming, TimingTracker, safeSymbols, safeColors } from '@kb-labs/shared-cli-ui';
+import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { keyValue, formatTiming } from '@kb-labs/shared-cli-ui';
 import { flush } from '@kb-labs/analytics-sdk-node';
 
-export const flushCommand: Command = {
-  name: 'analytics:flush',
-  category: 'analytics',
-  describe: 'Force flush buffer to sinks',
-  async run(ctx, argv, flags) {
-    const jsonMode = !!flags.json;
-    const tracker = new TimingTracker();
-
-    try {
-      tracker.checkpoint('flush');
-
-      await flush();
-
-      const duration = tracker.total();
-
-      if (jsonMode) {
-        ctx.presenter.json({
-          ok: true,
-          duration: formatTiming(duration),
-        });
-        return 0;
-      }
-
-      const info: Record<string, string> = {
-        Status: safeColors.success(`${safeSymbols.success} Buffer flushed to sinks`),
-        Duration: formatTiming(duration),
-      };
-
-      const output = box('Analytics Flush', keyValue(info));
-      ctx.presenter.write(output);
-      return 0;
-    } catch (error) {
-      if (jsonMode) {
-        ctx.presenter.json({
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      } else {
-        ctx.presenter.error(error instanceof Error ? error.message : String(error));
-      }
-      return 1;
-    }
-  },
+type AnalyticsFlushFlags = {
+  json: { type: 'boolean'; description?: string; default?: boolean };
 };
 
+type AnalyticsFlushResult = CommandResult & {
+  durationMs?: number;
+};
+
+export const run = defineCommand<AnalyticsFlushFlags, AnalyticsFlushResult>({
+  name: 'analytics:flush',
+  flags: {
+    json: {
+      type: 'boolean',
+      description: 'Return JSON payload',
+      default: false,
+    },
+  },
+  async handler(ctx, argv, flags) {
+    ctx.logger?.info('Analytics flush started');
+
+    ctx.tracker.checkpoint('flush');
+
+    await flush();
+
+    ctx.tracker.checkpoint('complete');
+    
+    ctx.logger?.info('Analytics flush completed');
+
+    if (flags.json) {
+      ctx.output?.json({
+        ok: true,
+        durationMs: ctx.tracker.total(),
+      });
+      return { ok: true };
+    }
+
+    const info: Record<string, string> = {
+      Status: ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Buffer flushed to sinks`) ?? 'Buffer flushed',
+      Duration: formatTiming(ctx.tracker.total()),
+    };
+
+    const outputText = ctx.output?.ui.box('Analytics Flush', keyValue(info));
+    ctx.output?.write(outputText);
+    return { ok: true };
+  },
+});
+
 export async function runFlushCommand(
-  ctx: Parameters<Command['run']>[0],
-  argv: Parameters<Command['run']>[1],
-  flags: Parameters<Command['run']>[2]
+  ctx: Parameters<typeof run>[0],
+  argv: Parameters<typeof run>[1],
+  flags: Parameters<typeof run>[2]
 ) {
-  return flushCommand.run(ctx, argv, flags);
+  return run(ctx, argv, flags);
 }

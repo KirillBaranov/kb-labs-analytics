@@ -2,20 +2,48 @@
  * Status command - Show analytics status
  */
 
-import type { Command } from '@kb-labs/cli-commands';
+import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
 import { Analytics } from '@kb-labs/analytics-core';
-import { box, safeColors } from '@kb-labs/shared-cli-ui';
 
-export const status: Command = {
+type AnalyticsStatusFlags = {
+  json: { type: 'boolean'; description?: string; default?: boolean };
+};
+
+type AnalyticsStatusResult = CommandResult & {
+  buffer?: {
+    segments: number;
+    totalSize: number;
+  };
+  metrics?: {
+    eventsPerSecond: number;
+    queueDepth: number;
+    errorRate: number;
+  };
+  backpressure?: {
+    level: string;
+    samplingRate: number;
+    dropCount: number;
+  };
+};
+
+export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
   name: 'analytics:status',
-  category: 'analytics',
-  describe: 'Show analytics status',
-  async run(ctx, argv, flags) {
-    const jsonMode = !!flags.json;
+  flags: {
+    json: {
+      type: 'boolean',
+      description: 'Return JSON payload',
+      default: false,
+    },
+  },
+  async handler(ctx, argv, flags) {
     const cwd = ctx?.cwd || process.cwd();
+    
+    ctx.logger?.info('Analytics status started', { cwd });
+
+    ctx.tracker.checkpoint('init');
 
     try {
       const analytics = new Analytics({ cwd });
@@ -45,8 +73,17 @@ export const status: Command = {
         }
       }
 
-      if (jsonMode) {
-        ctx.presenter.json({
+      ctx.tracker.checkpoint('complete');
+
+      ctx.logger?.info('Analytics status completed', { 
+        segmentsCount: segments.length,
+        totalSize,
+        eventsPerSecond: metrics.eventsPerSecond,
+        queueDepth: metrics.queueDepth,
+      });
+
+      if (flags.json) {
+        ctx.output?.json({
           ok: true,
           buffer: {
             segments: segments.length,
@@ -65,7 +102,7 @@ export const status: Command = {
           circuitBreakers: metrics.circuitBreakerStates,
         });
         await analytics.dispose();
-        return 0;
+        return { ok: true };
       }
 
       const lines: string[] = [];
@@ -95,34 +132,37 @@ export const status: Command = {
         lines.push('');
         lines.push('Circuit Breakers:');
         for (const [sinkId, state] of breakerStates) {
-          const color = state === 'closed' ? safeColors.success : state === 'open' ? safeColors.error : safeColors.warning;
-          lines.push(`  ${sinkId}: ${color(state)}`);
+          const color = state === 'closed' ? ctx.output?.ui.colors.success : state === 'open' ? ctx.output?.ui.colors.error : ctx.output?.ui.colors.warn;
+          lines.push(`  ${sinkId}: ${color ? color(state) : state}`);
         }
       }
 
-      const output = box('Analytics Status', lines);
-      ctx.presenter.write(output);
+      const outputText = ctx.output?.ui.box('Analytics Status', lines);
+      ctx.output?.write(outputText);
 
       await analytics.dispose();
-      return 0;
+      return { ok: true };
     } catch (error) {
-      if (jsonMode) {
-        ctx.presenter.json({
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      ctx.logger?.error('Analytics status failed', { error: errorMessage });
+      
+      if (flags.json) {
+        ctx.output?.json({
           ok: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMessage,
         });
       } else {
-        ctx.presenter.error(error instanceof Error ? error.message : String(error));
+        ctx.output?.error(error instanceof Error ? error : new Error(errorMessage));
       }
-      return 1;
+      return { ok: false, exitCode: 1, error: errorMessage };
     }
   },
-};
+});
 
 export async function statusCommand(
-  ctx: Parameters<Command['run']>[0],
-  argv: Parameters<Command['run']>[1],
-  flags: Parameters<Command['run']>[2]
+  ctx: Parameters<typeof run>[0],
+  argv: Parameters<typeof run>[1],
+  flags: Parameters<typeof run>[2]
 ) {
-  return status.run(ctx, argv, flags);
+  return run(ctx, argv, flags);
 }

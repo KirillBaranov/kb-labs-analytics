@@ -2,34 +2,67 @@
  * Emit command - Emit a test event
  */
 
-import type { Command } from '@kb-labs/cli-commands';
-import { box, keyValue, safeSymbols, safeColors } from '@kb-labs/shared-cli-ui';
+import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { keyValue } from '@kb-labs/shared-cli-ui';
 import { emit } from '@kb-labs/analytics-sdk-node';
 
-export const run: Command = {
+type AnalyticsEmitFlags = {
+  type: { type: 'string'; description?: string; default?: string };
+  payload: { type: 'string'; description?: string };
+  json: { type: 'boolean'; description?: string; default?: boolean };
+};
+
+type AnalyticsEmitResult = CommandResult & {
+  event?: {
+    type: string;
+    queued: boolean;
+    reason?: string;
+  };
+};
+
+export const run = defineCommand<AnalyticsEmitFlags, AnalyticsEmitResult>({
   name: 'analytics:emit',
-  category: 'analytics',
-  describe: 'Emit a test event',
-  async run(ctx, argv, flags) {
-    const jsonMode = !!flags.json;
-    const eventType = (flags.type as string) || 'test.event';
+  flags: {
+    type: {
+      type: 'string',
+      description: 'Event type (default: test.event)',
+      default: 'test.event',
+    },
+    payload: {
+      type: 'string',
+      description: 'Event payload as JSON string',
+    },
+    json: {
+      type: 'boolean',
+      description: 'Return JSON payload',
+      default: false,
+    },
+  },
+  async handler(ctx, argv, flags) {
+    const eventType = flags.type || 'test.event';
     let payload: Record<string, unknown> = {};
+    
+    ctx.logger?.info('Analytics emit started', { eventType });
 
     if (flags.payload) {
       try {
-        payload = JSON.parse(flags.payload as string);
+        payload = JSON.parse(flags.payload);
       } catch {
-        if (jsonMode) {
-          ctx.presenter.json({
+        ctx.logger?.error('Invalid JSON payload');
+        
+        if (flags.json) {
+          ctx.output?.json({
             ok: false,
             error: 'Invalid JSON payload',
           });
         } else {
-          ctx.presenter.error('Invalid JSON payload');
+          ctx.output?.error(new Error('Invalid JSON payload'));
         }
-        return 1;
+        return { ok: false, exitCode: 1 };
       }
     }
+
+    ctx.tracker.checkpoint('emit');
 
     // Emit event
     const result = await emit({
@@ -40,9 +73,16 @@ export const run: Command = {
       },
       payload,
     });
+    
+    ctx.tracker.checkpoint('complete');
+    
+    ctx.logger?.info('Analytics emit completed', { 
+      queued: result.queued,
+      reason: result.reason,
+    });
 
-    if (jsonMode) {
-      ctx.presenter.json({
+    if (flags.json) {
+      ctx.output?.json({
         ok: result.queued,
         event: {
           type: eventType,
@@ -50,31 +90,32 @@ export const run: Command = {
           reason: result.reason,
         },
       });
-      return result.queued ? 0 : 1;
+      return result.queued ? { ok: true } : { ok: false, exitCode: 1 };
     }
 
     if (result.queued) {
       const info: Record<string, string> = {
-        Status: safeColors.success(`${safeSymbols.success} Event emitted`),
+        Status: ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Event emitted`) ?? 'Event emitted',
         Type: eventType,
       };
       if (Object.keys(payload).length > 0) {
         info['Payload'] = JSON.stringify(payload);
       }
-      const output = box('Analytics Event', keyValue(info));
-      ctx.presenter.write(output);
-      return 0;
+      const outputText = ctx.output?.ui.box('Analytics Event', keyValue(info));
+      ctx.output?.write(outputText);
+      return { ok: true };
     } else {
-      ctx.presenter.error(`Failed to emit event: ${result.reason || 'Unknown error'}`);
-      return 1;
+      ctx.output?.error(new Error(`Failed to emit event: ${result.reason || 'Unknown error'}`));
+      ctx.logger?.error('Failed to emit event', { reason: result.reason });
+      return { ok: false, exitCode: 1 };
     }
   },
-};
+});
 
 export async function emitCommand(
-  ctx: Parameters<Command['run']>[0],
-  argv: Parameters<Command['run']>[1],
-  flags: Parameters<Command['run']>[2]
+  ctx: Parameters<typeof run>[0],
+  argv: Parameters<typeof run>[1],
+  flags: Parameters<typeof run>[2]
 ) {
-  return run.run(ctx, argv, flags);
+  return run(ctx, argv, flags);
 }

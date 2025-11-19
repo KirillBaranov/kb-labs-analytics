@@ -2,21 +2,69 @@
  * Tail command - Tail events from buffer
  */
 
-import type { Command } from '@kb-labs/cli-commands';
+import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
-import { box, keyValue, safeSymbols, safeColors } from '@kb-labs/shared-cli-ui';
+import { keyValue } from '@kb-labs/shared-cli-ui';
 
-export const tail: Command = {
+/**
+ * Find latest segments in buffer directory
+ */
+async function findLatestSegments(bufferDir: string): Promise<string[]> {
+  const files = await readdir(bufferDir).catch(() => []);
+  const jsonlFiles = files.filter((f) => f.endsWith('.jsonl'));
+
+  // Sort by modification time (newest first)
+  const segments = await Promise.all(
+    jsonlFiles.map(async (file) => {
+      const path = join(bufferDir, file);
+      const stats = await stat(path).catch(() => null);
+      return { path, mtime: stats?.mtimeMs || 0 };
+    })
+  );
+
+  segments.sort((a, b) => b.mtime - a.mtime);
+  return segments.map((s) => s.path).slice(0, 5); // Return top 5 most recent
+}
+
+type AnalyticsTailFlags = {
+  follow: { type: 'boolean'; description?: string; alias?: string; default?: boolean };
+  grep: { type: 'string'; description?: string };
+  json: { type: 'boolean'; description?: string; default?: boolean };
+};
+
+type AnalyticsTailResult = CommandResult & {
+  events?: Array<Record<string, unknown>>;
+};
+
+export const run = defineCommand<AnalyticsTailFlags, AnalyticsTailResult>({
   name: 'analytics:tail',
-  category: 'analytics',
-  describe: 'Tail events from buffer',
-  async run(ctx, argv, flags) {
-    const jsonMode = !!flags.json;
-    const follow = !!(flags.follow || flags.f);
-    const grep = flags.grep as string | undefined;
+  flags: {
+    follow: {
+      type: 'boolean',
+      description: 'Follow file for new events',
+      alias: 'f',
+      default: false,
+    },
+    grep: {
+      type: 'string',
+      description: 'Filter events by pattern (e.g. type=test.event)',
+    },
+    json: {
+      type: 'boolean',
+      description: 'Return JSON payload',
+      default: false,
+    },
+  },
+  async handler(ctx, argv, flags) {
+    const follow = flags.follow;
+    const grep = flags.grep;
     const cwd = ctx?.cwd || process.cwd();
+    
+    ctx.logger?.info('Analytics tail started', { follow, grep });
+
+    ctx.tracker.checkpoint('read');
 
     try {
       // Find repo root
@@ -32,12 +80,14 @@ export const tail: Command = {
       // Find latest segments
       const segments = await findLatestSegments(bufferDir);
       if (segments.length === 0) {
-        if (jsonMode) {
-          ctx.presenter.json({ ok: true, events: [], message: 'No events found' });
+        ctx.logger?.info('No events found');
+        
+        if (flags.json) {
+          ctx.output?.json({ ok: true, events: [], message: 'No events found' });
         } else {
-          ctx.presenter.info('No events found');
+          ctx.output?.info('No events found');
         }
-        return 0;
+        return { ok: true, events: [] };
       }
 
       // Read and display events
@@ -63,34 +113,38 @@ export const tail: Command = {
             }
 
             events.push(event);
-            if (!jsonMode && !follow) {
-              ctx.presenter.write(line + '\n');
+            if (!flags.json && !follow) {
+              ctx.output?.write(line + '\n');
             }
           } catch {
             // Skip invalid JSON
           }
         }
       }
+      
+      ctx.tracker.checkpoint('complete');
+      
+      ctx.logger?.info('Analytics tail completed', { eventsCount: events.length, follow });
 
-      if (jsonMode) {
-        ctx.presenter.json({ ok: true, events });
-        return 0;
+      if (flags.json) {
+        ctx.output?.json({ ok: true, events });
+        return { ok: true, events };
       }
 
       if (follow) {
         const latestSegment = segments[segments.length - 1];
         const info: Record<string, string> = {
-          Status: safeColors.info(`${safeSymbols.info} Following: ${latestSegment}`),
+          Status: ctx.output?.ui.colors.info(`${ctx.output?.ui.symbols.info} Following: ${latestSegment}`) ?? `Following: ${latestSegment}`,
         };
-        const output = box('Analytics Tail', keyValue(info));
-        ctx.presenter.write(output);
-        ctx.presenter.info('Press Ctrl+C to stop following');
+        const outputText = ctx.output?.ui.box('Analytics Tail', keyValue(info));
+        ctx.output?.write(outputText);
+        ctx.output?.info('Press Ctrl+C to stop following');
         // TODO: Implement actual follow logic with file watching
-        return 0;
+        return { ok: true, events };
       }
 
       if (events.length === 0 && grep) {
-        ctx.presenter.info(`No events matched filter: ${grep}`);
+        ctx.output?.info(`No events matched filter: ${grep}`);
       } else if (events.length > 0) {
         const info: Record<string, string> = {
           'Events found': `${events.length}`,
@@ -98,49 +152,32 @@ export const tail: Command = {
         if (grep) {
           info['Filter'] = grep;
         }
-        const output = box('Analytics Tail', keyValue(info));
-        ctx.presenter.write(output);
+        const outputText = ctx.output?.ui.box('Analytics Tail', keyValue(info));
+        ctx.output?.write(outputText);
       }
 
-      return 0;
+      return { ok: true, events };
     } catch (error) {
-      if (jsonMode) {
-        ctx.presenter.json({
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      ctx.logger?.error('Analytics tail failed', { error: errorMessage });
+      
+      if (flags.json) {
+        ctx.output?.json({
           ok: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMessage,
         });
       } else {
-        ctx.presenter.error(error instanceof Error ? error.message : String(error));
+        ctx.output?.error(error instanceof Error ? error : new Error(errorMessage));
       }
-      return 1;
+      return { ok: false, exitCode: 1, error: errorMessage };
     }
   },
-};
+});
 
 export async function tailCommand(
-  ctx: Parameters<Command['run']>[0],
-  argv: Parameters<Command['run']>[1],
-  flags: Parameters<Command['run']>[2]
+  ctx: Parameters<typeof run>[0],
+  argv: Parameters<typeof run>[1],
+  flags: Parameters<typeof run>[2]
 ) {
-  return tail.run(ctx, argv, flags);
-}
-
-/**
- * Find latest segments in buffer directory
- */
-async function findLatestSegments(bufferDir: string): Promise<string[]> {
-  const files = await readdir(bufferDir).catch(() => []);
-  const jsonlFiles = files.filter((f) => f.endsWith('.jsonl'));
-
-  // Sort by modification time (newest first)
-  const segments = await Promise.all(
-    jsonlFiles.map(async (file) => {
-      const path = join(bufferDir, file);
-      const stats = await stat(path).catch(() => null);
-      return { path, mtime: stats?.mtimeMs || 0 };
-    })
-  );
-
-  segments.sort((a, b) => b.mtime - a.mtime);
-  return segments.map((s) => s.path).slice(0, 5); // Return top 5 most recent
+  return run(ctx, argv, flags);
 }
