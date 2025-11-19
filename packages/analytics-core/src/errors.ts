@@ -1,7 +1,6 @@
 /**
  * Error handling for analytics-core
  * Uses KbError pattern from @kb-labs/core-config for consistent error handling
- * Note: Importing from source since core-config has dts: false
  */
 
 /**

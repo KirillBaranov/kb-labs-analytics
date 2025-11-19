@@ -3,7 +3,6 @@
  */
 
 import type { AnalyticsEventV1 } from './types';
-import type { SinkConfig } from './types/config';
 
 export interface BatcherConfig {
   maxSize?: number; // Max batch size (default: 100)

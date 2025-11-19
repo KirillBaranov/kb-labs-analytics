@@ -216,6 +216,7 @@ describe('SQLiteSink', () => {
     // Should have main table and possibly partition table
     expect(tables.length).toBeGreaterThan(0);
     expect(tables.some((t) => t.name === 'events')).toBe(true);
+    expect(tables.some((t) => t.name === tableName)).toBe(true);
 
     db.close();
     await partitionedSink.close();

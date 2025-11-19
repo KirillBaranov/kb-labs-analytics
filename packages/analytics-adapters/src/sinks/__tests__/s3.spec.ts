@@ -6,9 +6,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { S3Sink } from '../s3';
 import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
 
+const mockSend = vi.fn();
+
 // Mock AWS SDK
 vi.mock('@aws-sdk/client-s3', () => {
-  const mockSend = vi.fn();
   return {
     S3Client: vi.fn().mockImplementation(() => ({
       send: mockSend,
@@ -28,10 +29,13 @@ describe('S3Sink', () => {
       AWS_ACCESS_KEY_ID: 'test-access-key',
       AWS_SECRET_ACCESS_KEY: 'test-secret-key',
     };
+    mockSend.mockReset();
   });
 
   afterEach(async () => {
-    await sink.close().catch(() => {});
+    if (sink) {
+      await sink.close().catch(() => {});
+    }
     process.env = originalEnv;
     vi.clearAllMocks();
   });
@@ -85,18 +89,13 @@ describe('S3Sink', () => {
   });
 
   it('should write events successfully', async () => {
-    const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-    const mockClient = new S3Client({} as any);
-    const mockSend = vi.fn().mockResolvedValue({});
-
-    // Mock the send method
-    (mockClient as any).send = mockSend;
-
     sink = new S3Sink({
       type: 's3',
       bucket: 'test-bucket',
       keyPrefix: 'events/',
     });
+
+    await sink.init();
 
     const events: AnalyticsEventV1[] = [
       {
@@ -110,10 +109,18 @@ describe('S3Sink', () => {
       },
     ];
 
-    // Note: This test will fail if AWS SDK is not properly mocked
-    // For a working test, we'd need to properly mock the S3Client instance
-    // This is a placeholder test structure
-    expect(sink).toBeDefined();
+    mockSend.mockResolvedValue({ ok: true });
+
+    await sink.write(events);
+
+    const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(PutObjectCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Bucket: 'test-bucket',
+      }),
+    );
   });
 
   it('should return idempotency key from event ID', () => {

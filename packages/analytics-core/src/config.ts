@@ -3,10 +3,8 @@
  * Uses @kb-labs/core-bundle for unified configuration system
  */
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error - @kb-labs/core-bundle types not generated yet
 import { loadBundle } from '@kb-labs/core-bundle';
-import { resolveConfig } from '@kb-labs/core';
+import { resolveConfig, type Diagnostic } from '@kb-labs/core';
 import type { AnalyticsConfig } from './types/config';
 
 const DEFAULT_CONFIG: AnalyticsConfig = {
@@ -107,8 +105,8 @@ function envMapper(env: NodeJS.ProcessEnv): Partial<AnalyticsConfig> {
 /**
  * Validate config
  */
-function validateConfig(cfg: AnalyticsConfig): { ok: boolean; diagnostics?: Array<{ level: string; code: string; message: string }> } {
-  const diagnostics: Array<{ level: string; code: string; message: string }> = [];
+function validateConfig(cfg: AnalyticsConfig): { ok: boolean; diagnostics?: Diagnostic[] } {
+  const diagnostics: Diagnostic[] = [];
 
   // Check configVersion
   if (cfg.configVersion && cfg.configVersion > 1) {
@@ -158,7 +156,7 @@ function validateConfig(cfg: AnalyticsConfig): { ok: boolean; diagnostics?: Arra
   }
 
   // Return ok: false only if there are errors
-  const hasErrors = diagnostics.some((d: { level: string }) => d.level === 'error');
+  const hasErrors = diagnostics.some((d) => d.level === 'error');
   return hasErrors ? { ok: false, diagnostics } : { ok: true, diagnostics: diagnostics.length > 0 ? diagnostics : undefined };
 }
 
@@ -170,14 +168,14 @@ export async function loadAnalyticsConfig(
   cliOverrides?: Partial<AnalyticsConfig>
 ): Promise<{
   config: AnalyticsConfig;
-  diagnostics: Array<{ level: string; code: string; message: string }>;
+  diagnostics: Diagnostic[];
 }> {
   try {
     // Load bundle using core-bundle system
     const bundle = await loadBundle<{ analytics?: Partial<AnalyticsConfig> }>({
       cwd,
-      product: 'analytics' as any, // TODO: Add 'analytics' to ProductId type
-      profileKey: 'default',
+      product: 'analytics',
+      profileId: 'default',
       cli: cliOverrides as Record<string, unknown>,
       validate: 'warn',
     });
@@ -200,11 +198,7 @@ export async function loadAnalyticsConfig(
 
     return {
       config: resolved.value,
-      diagnostics: resolved.diagnostics.map((d: { level: string; code: string; message?: string }) => ({
-        level: d.level,
-        code: d.code,
-        message: d.message || '',
-      })),
+      diagnostics: resolved.diagnostics,
     };
   } catch (error) {
     // Fallback to defaults if bundle loading fails (e.g., no config file)
@@ -224,11 +218,7 @@ export async function loadAnalyticsConfig(
           code: 'CONFIG_LOAD_FAILED',
           message: error instanceof Error ? error.message : 'Failed to load config bundle',
         },
-        ...resolved.diagnostics.map((d: { level: string; code: string; message?: string }) => ({
-          level: d.level,
-          code: d.code,
-          message: d.message || '',
-        })),
+        ...resolved.diagnostics,
       ],
     };
   }

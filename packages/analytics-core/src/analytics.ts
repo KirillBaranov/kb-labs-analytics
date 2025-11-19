@@ -5,7 +5,7 @@
 
 import { uuidv7 } from 'uuidv7';
 import type { AnalyticsEventV1, EmitResult, RunScope, EventActor, EventContext } from './types';
-import { validateEvent, safeValidateEvent } from './schema/event-v1';
+import { safeValidateEvent } from './schema/event-v1';
 import { WalBuffer } from './buffer';
 import { DeadLetterQueue } from './dlq';
 import { MiddlewarePipeline } from './middleware/index';
@@ -15,7 +15,6 @@ import { EventBatcher } from './batcher';
 import { SinkRouter, type SinkAdapter } from './router';
 import { loadAnalyticsConfig } from './config';
 import type { AnalyticsConfig, SinkConfig } from './types/config';
-import { createAnalyticsError, ANALYTICS_ERROR_CODES } from './errors';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
 
@@ -382,7 +381,7 @@ export class Analytics {
     }
 
     // Add to batchers for each sink
-    for (const [sinkId, batcher] of this.batchers.entries()) {
+    for (const [_sinkId, batcher] of this.batchers.entries()) {
       for (const event of events) {
         await batcher.add(event);
       }

@@ -2,7 +2,6 @@
  * Event validator with detailed error reporting
  */
 
-import { z } from 'zod';
 import { AnalyticsEventV1Schema, type AnalyticsEventV1 } from './event-v1.js';
 
 export interface ValidationResult {

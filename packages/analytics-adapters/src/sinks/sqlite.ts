@@ -2,11 +2,25 @@
  * SQLite Sink - Store events in SQLite database
  */
 
-import { Database } from 'better-sqlite3';
-import { join } from 'node:path';
 import { promises as fsp } from 'node:fs';
 import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
 import type { SinkConfig } from '@kb-labs/analytics-core';
+
+type SqliteStatement = {
+  run: (...args: unknown[]) => unknown;
+  get: (...args: unknown[]) => unknown;
+  all: (...args: unknown[]) => unknown;
+};
+
+interface SqliteDatabase {
+  prepare(sql: string): SqliteStatement;
+  exec(sql: string): unknown;
+  pragma(sql: string): unknown;
+  transaction<TArgs extends unknown[], TReturn>(
+    fn: (...args: TArgs) => TReturn,
+  ): (...args: TArgs) => TReturn;
+  close(): void;
+}
 
 export interface SQLiteSinkConfig extends SinkConfig {
   type: 'sqlite';
@@ -28,7 +42,7 @@ export class SQLiteSink {
     retentionDays: number;
     idempotencyKey: string;
   };
-  private db: Database | null = null;
+  private db: SqliteDatabase | null = null;
   private writtenEvents = new Set<string>(); // Track written event IDs for idempotency
 
   constructor(config: SQLiteSinkConfig) {
@@ -59,8 +73,8 @@ export class SQLiteSink {
     }
 
     // Open database connection
-    const { default: Database } = await import('better-sqlite3');
-    this.db = new Database(this.config.path);
+    const { default: BetterSqlite } = await import('better-sqlite3');
+    this.db = new BetterSqlite(this.config.path) as unknown as SqliteDatabase;
 
     // Enable WAL mode for better concurrency
     this.db.pragma('journal_mode = WAL');

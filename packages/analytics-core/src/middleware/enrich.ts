@@ -3,7 +3,7 @@
  */
 
 import { hostname } from 'node:os';
-import type { AnalyticsEventV1, EventContext } from '../types';
+import type { AnalyticsEventV1 } from '../types';
 import { findRepoRoot } from '@kb-labs/core';
 
 export interface EnrichConfig {
