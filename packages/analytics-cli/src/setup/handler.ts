@@ -45,7 +45,7 @@ export async function run(ctx: SetupContext = {}) {
     ].join('\n')
   );
 
-  ctx.runtime?.log?.('info', 'Analytics setup completed', { cwd, created });
+  ctx.logger?.info('Analytics setup completed', { cwd, created });
 
   return {
     ok: true,

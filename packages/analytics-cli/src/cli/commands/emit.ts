@@ -3,7 +3,6 @@
  */
 
 import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
-import { keyValue } from '@kb-labs/shared-cli-ui';
 import { emit } from '@kb-labs/analytics-sdk-node';
 
 type AnalyticsEmitFlags = {
@@ -94,14 +93,24 @@ export const run = defineCommand<AnalyticsEmitFlags, AnalyticsEmitResult>({
     }
 
     if (result.queued) {
-      const info: Record<string, string> = {
-        Status: ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Event emitted`) ?? 'Event emitted',
-        Type: eventType,
-      };
+      const items: string[] = [
+        `${ctx.output?.ui.symbols.success} ${ctx.output?.ui.colors.success('Event emitted')}`,
+        `Type: ${eventType}`,
+      ];
       if (Object.keys(payload).length > 0) {
-        info['Payload'] = JSON.stringify(payload);
+        items.push(`Payload: ${JSON.stringify(payload)}`);
       }
-      const outputText = ctx.output?.ui.box('Analytics Event', keyValue(info));
+
+      const outputText = ctx.output?.ui.sideBox({
+        title: 'Analytics Event',
+        sections: [
+          {
+            items,
+          },
+        ],
+        status: 'success',
+        timing: ctx.tracker.total(),
+      });
       ctx.output?.write(outputText);
       return { ok: true };
     } else {

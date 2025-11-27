@@ -13,7 +13,7 @@ type CliCommands = NonNullable<ManifestV2['cli']>['commands'];
 const commands: CliCommands = [
   {
     manifestVersion: '1.0',
-    id: 'analytics:emit',
+    id: 'emit',
     group: 'analytics',
     describe: 'Emit a test event',
     longDescription: 'Emit a test analytics event for debugging',
@@ -37,7 +37,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:tail',
+    id: 'tail',
     group: 'analytics',
     describe: 'Tail events from buffer',
     longDescription: 'Display events from buffer (optionally follow for new events)',
@@ -63,7 +63,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:flush',
+    id: 'flush',
     group: 'analytics',
     describe: 'Force flush buffer to sinks',
     longDescription: 'Force flush all buffered events to configured sinks',
@@ -73,7 +73,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:dlq',
+    id: 'dlq',
     group: 'analytics',
     describe: 'Dead-Letter Queue operations',
     longDescription: 'Manage and replay events from Dead-Letter Queue',
@@ -93,7 +93,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:compact',
+    id: 'compact',
     group: 'analytics',
     describe: 'Compact old segments',
     longDescription: 'Compact old buffer segments based on retention policy',
@@ -109,7 +109,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:status',
+    id: 'status',
     group: 'analytics',
     describe: 'Show analytics status',
     longDescription: 'Show analytics status including buffer, sinks, and metrics',
@@ -119,7 +119,7 @@ const commands: CliCommands = [
   },
   {
     manifestVersion: '1.0',
-    id: 'analytics:stats',
+    id: 'stats',
     group: 'analytics',
     describe: 'Show metrics statistics',
     longDescription: 'Show analytics metrics with optional interval updates',

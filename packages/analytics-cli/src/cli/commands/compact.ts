@@ -7,7 +7,6 @@ import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
 import { loadAnalyticsConfig } from '@kb-labs/analytics-core';
-import { keyValue, formatTiming } from '@kb-labs/shared-cli-ui';
 
 type AnalyticsCompactFlags = {
   'dry-run': { type: 'boolean'; description?: string; default?: boolean };
@@ -101,27 +100,41 @@ export const run = defineCommand<AnalyticsCompactFlags, AnalyticsCompactResult>(
       return { ok: true };
     }
 
-    const info: Record<string, string> = {
-      Mode: dryRun
-        ? (ctx.output?.ui.colors.muted('DRY RUN (no files deleted)') ?? 'DRY RUN')
-        : (ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Deleted ${deleted} file(s)`) ?? `Deleted ${deleted} file(s)`),
-      'Retention policy': `${retentionDays} days`,
-      'Files to delete': `${toDelete.length}`,
-      Duration: formatTiming(ctx.tracker.total()),
-    };
+    const summaryItems: string[] = [
+      dryRun
+        ? ctx.output?.ui.colors.muted('DRY RUN (no files deleted)') ?? 'DRY RUN'
+        : `${ctx.output?.ui.symbols.success} ${ctx.output?.ui.colors.success(`Deleted ${deleted} file(s)`)}`,
+      `Retention policy: ${retentionDays} days`,
+      `Files to delete: ${toDelete.length}`,
+    ];
 
-    const outputText = ctx.output?.ui.box('Analytics Compact', keyValue(info));
-    ctx.output?.write(outputText);
+    const sections: Array<{ header?: string; items: string[] }> = [
+      {
+        items: summaryItems,
+      },
+    ];
 
     if (dryRun && toDelete.length > 0) {
-      ctx.output?.write('\nFiles that would be deleted:\n');
+      const fileItems: string[] = [];
       for (const file of toDelete.slice(0, 10)) {
-        ctx.output?.write(`  ${ctx.output?.ui.colors.muted(file) ?? file}\n`);
+        fileItems.push(ctx.output?.ui.colors.muted(file) ?? file);
       }
       if (toDelete.length > 10) {
-        ctx.output?.write(`  ... and ${toDelete.length - 10} more\n`);
+        fileItems.push(ctx.output?.ui.colors.muted(`... and ${toDelete.length - 10} more`) ?? `... and ${toDelete.length - 10} more`);
       }
+      sections.push({
+        header: 'Files that would be deleted',
+        items: fileItems,
+      });
     }
+
+    const outputText = ctx.output?.ui.sideBox({
+      title: 'Analytics Compact',
+      sections,
+      status: dryRun ? 'info' : 'success',
+      timing: ctx.tracker.total(),
+    });
+    ctx.output?.write(outputText);
 
     return { ok: true, deleted: dryRun ? toDelete.length : deleted, files: toDelete };
   },

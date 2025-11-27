@@ -3,7 +3,6 @@
  */
 
 import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
-import { keyValue, formatTiming } from '@kb-labs/shared-cli-ui';
 import { flush } from '@kb-labs/analytics-sdk-node';
 
 type AnalyticsFlushFlags = {
@@ -42,12 +41,18 @@ export const run = defineCommand<AnalyticsFlushFlags, AnalyticsFlushResult>({
       return { ok: true };
     }
 
-    const info: Record<string, string> = {
-      Status: ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Buffer flushed to sinks`) ?? 'Buffer flushed',
-      Duration: formatTiming(ctx.tracker.total()),
-    };
-
-    const outputText = ctx.output?.ui.box('Analytics Flush', keyValue(info));
+    const outputText = ctx.output?.ui.sideBox({
+      title: 'Analytics Flush',
+      sections: [
+        {
+          items: [
+            `${ctx.output?.ui.symbols.success} ${ctx.output?.ui.colors.success('Buffer flushed to sinks')}`,
+          ],
+        },
+      ],
+      status: 'success',
+      timing: ctx.tracker.total(),
+    });
     ctx.output?.write(outputText);
     return { ok: true };
   },

@@ -4,7 +4,6 @@
 
 import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
 import { Analytics } from '@kb-labs/analytics-core';
-import { keyValue } from '@kb-labs/shared-cli-ui';
 
 /**
  * Parse interval string (e.g. "5s", "10s", "1m")
@@ -92,16 +91,24 @@ export const run = defineCommand<AnalyticsStatsFlags, AnalyticsStatsResult>({
             },
           });
         } else {
-          const info: Record<string, string> = {
-            'Events/sec': metrics.eventsPerSecond.toFixed(2),
-            'Queue depth': `${metrics.queueDepth}`,
-            'Error rate': `${(metrics.errorRate * 100).toFixed(2)}%`,
-            'Backpressure': backpressure.level,
-            'Sampling rate': `${(backpressure.samplingRate * 100).toFixed(1)}%`,
-            'Drops': `${backpressure.dropCount}`,
-          };
+          const items: string[] = [
+            `Events/sec: ${metrics.eventsPerSecond.toFixed(2)}`,
+            `Queue depth: ${metrics.queueDepth}`,
+            `Error rate: ${(metrics.errorRate * 100).toFixed(2)}%`,
+            `Backpressure: ${backpressure.level}`,
+            `Sampling rate: ${(backpressure.samplingRate * 100).toFixed(1)}%`,
+            `Drops: ${backpressure.dropCount}`,
+          ];
 
-          const outputText = ctx.output?.ui.box('Analytics Stats', keyValue(info));
+          const outputText = ctx.output?.ui.sideBox({
+            title: 'Analytics Stats',
+            sections: [
+              {
+                items,
+              },
+            ],
+            status: 'info',
+          });
           ctx.output?.write(outputText);
         }
       };

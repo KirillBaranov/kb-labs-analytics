@@ -105,39 +105,62 @@ export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
         return { ok: true };
       }
 
-      const lines: string[] = [];
-      
+      const sections: Array<{ header?: string; items: string[] }> = [];
+
       // Buffer section
-      lines.push('Buffer:');
-      lines.push(`  Segments: ${segments.length}`);
-      lines.push(`  Total size: ${(totalSize / 1024).toFixed(2)} KB`);
-      lines.push('');
+      sections.push({
+        header: 'Buffer',
+        items: [
+          `Segments: ${segments.length}`,
+          `Total size: ${(totalSize / 1024).toFixed(2)} KB`,
+        ],
+      });
 
       // Metrics section
-      lines.push('Metrics:');
-      lines.push(`  Events/sec: ${metrics.eventsPerSecond.toFixed(2)}`);
-      lines.push(`  Queue depth: ${metrics.queueDepth}`);
-      lines.push(`  Error rate: ${(metrics.errorRate * 100).toFixed(2)}%`);
-      lines.push('');
+      sections.push({
+        header: 'Metrics',
+        items: [
+          `Events/sec: ${metrics.eventsPerSecond.toFixed(2)}`,
+          `Queue depth: ${metrics.queueDepth}`,
+          `Error rate: ${(metrics.errorRate * 100).toFixed(2)}%`,
+        ],
+      });
 
       // Backpressure section
-      lines.push('Backpressure:');
-      lines.push(`  Level: ${backpressure.level}`);
-      lines.push(`  Sampling rate: ${(backpressure.samplingRate * 100).toFixed(1)}%`);
-      lines.push(`  Drops: ${backpressure.dropCount}`);
+      sections.push({
+        header: 'Backpressure',
+        items: [
+          `Level: ${backpressure.level}`,
+          `Sampling rate: ${(backpressure.samplingRate * 100).toFixed(1)}%`,
+          `Drops: ${backpressure.dropCount}`,
+        ],
+      });
 
       // Circuit breakers section
       const breakerStates = Object.entries(metrics.circuitBreakerStates);
       if (breakerStates.length > 0) {
-        lines.push('');
-        lines.push('Circuit Breakers:');
+        const breakerItems: string[] = [];
         for (const [sinkId, state] of breakerStates) {
-          const color = state === 'closed' ? ctx.output?.ui.colors.success : state === 'open' ? ctx.output?.ui.colors.error : ctx.output?.ui.colors.warn;
-          lines.push(`  ${sinkId}: ${color ? color(state) : state}`);
+          const color =
+            state === 'closed'
+              ? ctx.output?.ui.colors.success
+              : state === 'open'
+                ? ctx.output?.ui.colors.error
+                : ctx.output?.ui.colors.warn;
+          breakerItems.push(`${sinkId}: ${color ? color(state) : state}`);
         }
+        sections.push({
+          header: 'Circuit Breakers',
+          items: breakerItems,
+        });
       }
 
-      const outputText = ctx.output?.ui.box('Analytics Status', lines);
+      const outputText = ctx.output?.ui.sideBox({
+        title: 'Analytics Status',
+        sections,
+        status: 'info',
+        timing: ctx.tracker.total(),
+      });
       ctx.output?.write(outputText);
 
       await analytics.dispose();

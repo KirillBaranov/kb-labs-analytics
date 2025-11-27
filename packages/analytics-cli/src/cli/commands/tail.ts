@@ -6,7 +6,6 @@ import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
-import { keyValue } from '@kb-labs/shared-cli-ui';
 
 /**
  * Find latest segments in buffer directory
@@ -133,12 +132,20 @@ export const run = defineCommand<AnalyticsTailFlags, AnalyticsTailResult>({
 
       if (follow) {
         const latestSegment = segments[segments.length - 1];
-        const info: Record<string, string> = {
-          Status: ctx.output?.ui.colors.info(`${ctx.output?.ui.symbols.info} Following: ${latestSegment}`) ?? `Following: ${latestSegment}`,
-        };
-        const outputText = ctx.output?.ui.box('Analytics Tail', keyValue(info));
+        const outputText = ctx.output?.ui.sideBox({
+          title: 'Analytics Tail',
+          sections: [
+            {
+              items: [
+                `${ctx.output?.ui.symbols.info} ${ctx.output?.ui.colors.info(`Following: ${latestSegment}`)}`,
+                ctx.output?.ui.colors.muted('Press Ctrl+C to stop following'),
+              ],
+            },
+          ],
+          status: 'info',
+          timing: ctx.tracker.total(),
+        });
         ctx.output?.write(outputText);
-        ctx.output?.info('Press Ctrl+C to stop following');
         // TODO: Implement actual follow logic with file watching
         return { ok: true, events };
       }
@@ -146,13 +153,20 @@ export const run = defineCommand<AnalyticsTailFlags, AnalyticsTailResult>({
       if (events.length === 0 && grep) {
         ctx.output?.info(`No events matched filter: ${grep}`);
       } else if (events.length > 0) {
-        const info: Record<string, string> = {
-          'Events found': `${events.length}`,
-        };
+        const items: string[] = [`Events found: ${events.length}`];
         if (grep) {
-          info['Filter'] = grep;
+          items.push(`Filter: ${grep}`);
         }
-        const outputText = ctx.output?.ui.box('Analytics Tail', keyValue(info));
+        const outputText = ctx.output?.ui.sideBox({
+          title: 'Analytics Tail',
+          sections: [
+            {
+              items,
+            },
+          ],
+          status: 'success',
+          timing: ctx.tracker.total(),
+        });
         ctx.output?.write(outputText);
       }
 

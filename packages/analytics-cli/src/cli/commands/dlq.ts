@@ -7,7 +7,6 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
 import { emit } from '@kb-labs/analytics-sdk-node';
-import { keyValue, formatTiming } from '@kb-labs/shared-cli-ui';
 import type { EnhancedCliContext } from '@kb-labs/cli-command-kit';
 
 /**
@@ -43,13 +42,21 @@ async function listDlqFiles(ctx: EnhancedCliContext, jsonMode: boolean, cwd: str
       return { ok: true };
     }
 
-    const lines: string[] = [];
-    lines.push(...keyValue({ 'DLQ files': `${jsonlFiles.length}` }));
-    lines.push('');
-    for (const file of jsonlFiles) {
-      lines.push(`${ctx.output?.ui.colors.muted(file) ?? file}`);
-    }
-    const outputText = ctx.output?.ui.box('Dead-Letter Queue', lines);
+    const items: string[] = [
+      `DLQ files: ${jsonlFiles.length}`,
+      '',
+      ...jsonlFiles.map((file) => ctx.output?.ui.colors.muted(file) ?? file),
+    ];
+
+    const outputText = ctx.output?.ui.sideBox({
+      title: 'Dead-Letter Queue',
+      sections: [
+        {
+          items,
+        },
+      ],
+      status: 'info',
+    });
     ctx.output?.write(outputText);
     return { ok: true };
   } catch (error) {
@@ -153,16 +160,24 @@ async function replayDlqEvents(
       return { ok: true };
     }
 
-    const info: Record<string, string> = {
-      Status: ctx.output?.ui.colors.success(`${ctx.output?.ui.symbols.success} Replayed ${replayed} event(s)`) ?? `Replayed ${replayed} event(s)`,
-      Failed: failed > 0 ? (ctx.output?.ui.colors.error(`${failed}`) ?? `${failed}`) : '0',
-      Duration: formatTiming(ctx.tracker.total()),
-    };
+    const items: string[] = [
+      `${ctx.output?.ui.symbols.success} ${ctx.output?.ui.colors.success(`Replayed ${replayed} event(s)`)}`,
+      `Failed: ${failed > 0 ? ctx.output?.ui.colors.error(`${failed}`) : '0'}`,
+    ];
     if (filter) {
-      info['Filter'] = filter;
+      items.push(`Filter: ${filter}`);
     }
 
-    const outputText = ctx.output?.ui.box('DLQ Replay', keyValue(info));
+    const outputText = ctx.output?.ui.sideBox({
+      title: 'DLQ Replay',
+      sections: [
+        {
+          items,
+        },
+      ],
+      status: failed > 0 ? 'warning' : 'success',
+      timing: ctx.tracker.total(),
+    });
     ctx.output?.write(outputText);
     return { ok: true };
   } catch (error) {

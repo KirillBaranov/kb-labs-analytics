@@ -67,12 +67,15 @@ export class Analytics {
     const { config, diagnostics } = await loadAnalyticsConfig(cwd, this.options?.config);
     this.config = config;
 
-    // Log diagnostics
-    for (const diag of diagnostics) {
-      if (diag.level === 'error') {
-        console.error(`[analytics] ${diag.code}: ${diag.message}`);
-      } else if (diag.level === 'warn') {
-        console.warn(`[analytics] ${diag.code}: ${diag.message}`);
+    // Log diagnostics (only in debug mode to avoid spam)
+    const DEBUG_MODE = process.env.DEBUG_SANDBOX === '1' || process.env.NODE_ENV === 'development';
+    if (DEBUG_MODE) {
+      for (const diag of diagnostics) {
+        if (diag.level === 'error') {
+          console.error(`[analytics] ${diag.code}: ${diag.message}`);
+        } else if (diag.level === 'warn') {
+          console.warn(`[analytics] ${diag.code}: ${diag.message}`);
+        }
       }
     }
 
