@@ -6,11 +6,11 @@
 import { findRepoRoot } from '@kb-labs/core';
 import { join } from 'node:path';
 import { Analytics } from '@kb-labs/analytics-core';
-import { getBestSink } from '../utils/sink-reader.js';
-import { readEventsFromSQLite } from '../utils/sqlite-reader.js';
-import { readEventsFromFS } from '../utils/fs-reader.js';
-import { readEventsFromBuffer } from '../utils/buffer-reader.js';
-import type { EventFilters } from '../utils/sink-reader.js';
+import { getBestSink } from '../utils/sink-reader';
+import { readEventsFromSQLite } from '../utils/sqlite-reader';
+import { readEventsFromFS } from '../utils/fs-reader';
+import { readEventsFromBuffer } from '../utils/buffer-reader';
+import type { EventFilters } from '../utils/sink-reader';
 import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
 
 type HandlerContext = {

@@ -2,7 +2,7 @@
  * Stats command - Show metrics statistics
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
 import { Analytics } from '@kb-labs/analytics-core';
 
 /**

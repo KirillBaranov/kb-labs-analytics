@@ -4,8 +4,8 @@
 
 import { promises as fsp } from 'node:fs';
 import { join } from 'node:path';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
-import type { SinkConfig } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
+import type { SinkConfig } from '@kb-labs/analytics-contracts';
 
 export interface FSSinkConfig extends SinkConfig {
   type: 'fs';

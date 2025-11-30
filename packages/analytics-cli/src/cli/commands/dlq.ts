@@ -2,12 +2,12 @@
  * DLQ command - Dead-Letter Queue operations
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { findRepoRoot } from '@kb-labs/core';
 import { emit } from '@kb-labs/analytics-sdk-node';
-import type { EnhancedCliContext } from '@kb-labs/cli-command-kit';
+import type { EnhancedCliContext } from '@kb-labs/shared-command-kit';
 
 /**
  * List DLQ files

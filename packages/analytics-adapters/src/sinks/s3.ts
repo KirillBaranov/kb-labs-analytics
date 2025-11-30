@@ -5,8 +5,8 @@
 
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import type { PutObjectCommandInput } from '@aws-sdk/client-s3';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
-import type { SinkConfig } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
+import type { SinkConfig } from '@kb-labs/analytics-contracts';
 
 export interface S3SinkConfig extends SinkConfig {
   type: 's3';

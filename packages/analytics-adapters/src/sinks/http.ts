@@ -7,7 +7,7 @@ import type {
   SinkConfig,
   RetryConfig,
   CircuitBreakerConfig,
-} from '@kb-labs/analytics-core';
+} from '@kb-labs/analytics-contracts';
 
 export interface HTTPSinkConfig extends SinkConfig {
   type: 'http';

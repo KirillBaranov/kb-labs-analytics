@@ -2,7 +2,7 @@
  * Emit command - Emit a test event
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
 import { emit } from '@kb-labs/analytics-sdk-node';
 
 type AnalyticsEmitFlags = {

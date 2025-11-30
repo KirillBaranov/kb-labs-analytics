@@ -2,7 +2,7 @@
  * Flush command - Force flush buffer to sinks
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/cli-command-kit';
+import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
 import { flush } from '@kb-labs/analytics-sdk-node';
 
 type AnalyticsFlushFlags = {

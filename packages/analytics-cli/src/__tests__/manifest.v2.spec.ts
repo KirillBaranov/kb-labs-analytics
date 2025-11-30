@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { manifest } from '../manifest.v2.js';
+import { manifest } from '../manifest.v2';
 
 describe('@kb-labs/analytics manifest', () => {
   it('exposes all CLI commands', () => {
