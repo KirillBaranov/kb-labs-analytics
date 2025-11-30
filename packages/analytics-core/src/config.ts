@@ -231,5 +231,5 @@ export function getDefaultConfig(): AnalyticsConfig {
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 }
 
-export type { AnalyticsConfig } from './types/config.js';
+export type { AnalyticsConfig } from './types/config';
 

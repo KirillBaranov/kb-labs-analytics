@@ -2,7 +2,7 @@
  * Event validator with detailed error reporting
  */
 
-import { AnalyticsEventV1Schema, type AnalyticsEventV1 } from './event-v1.js';
+import { AnalyticsEventV1Schema, type AnalyticsEventV1 } from './event-v1';
 
 export interface ValidationResult {
   valid: boolean;
