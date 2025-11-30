@@ -1,8 +1,9 @@
 {
-  "extends": "@kb-labs/devkit/tsconfig/node.json",
-  "include": ["src"],
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
-  }
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }
-

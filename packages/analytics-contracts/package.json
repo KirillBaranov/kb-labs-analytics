@@ -1,17 +1,15 @@
 {
   "name": "@kb-labs/analytics-contracts",
   "version": "0.1.0",
-  "description": "Contracts for KB Labs Analytics plugin (events, buffer, DLQ).",
+  "description": "Type definitions and contracts for KB Labs Analytics (shared between core and adapters)",
   "type": "module",
-  "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    },
-    "./dist/*": "./dist/*"
+    }
   },
   "files": [
     "dist",
@@ -19,35 +17,19 @@
     "LICENSE"
   ],
   "sideEffects": false,
-  "author": {
-    "name": "Kirill Baranov",
-    "url": "https://github.com/kirill-baranov"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kirill-baranov/kb-labs-analytics.git",
-    "directory": "packages/analytics-contracts"
-  },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsup --config tsup.config.ts",
+    "dev": "tsup --config tsup.config.ts --watch",
     "type-check": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint": "eslint . --ignore-pattern 'dist/**'",
+    "lint:fix": "eslint . --fix --ignore-pattern 'dist/**'"
   },
+  "dependencies": {},
   "devDependencies": {
-    "@kb-labs/devkit": "link:../../../kb-labs-devkit",
-    "@types/node": "^24.7.0",
-    "eslint": "^9.13.0",
+    "@types/node": "^24.3.3",
     "rimraf": "^6.0.1",
     "tsup": "^8.5.0",
     "typescript": "^5.6.3"
-  },
-  "engines": {
-    "node": ">=18.18.0",
-    "pnpm": ">=9.0.0"
   }
 }
-
