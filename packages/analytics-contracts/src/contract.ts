@@ -1,5 +1,14 @@
-import type { PluginContracts } from './types';
 import { contractsSchemaId, contractsVersion } from './version';
+
+// PluginContracts type inlined to avoid circular dependency with plugin-manifest
+interface PluginContracts {
+  schema: string;
+  pluginId: string;
+  contractsVersion: string;
+  artifacts?: Record<string, unknown>;
+  commands?: Record<string, unknown>;
+  api?: { rest?: { basePath: string; routes: Record<string, unknown> } };
+}
 
 /**
  * Analytics plugin contracts manifest

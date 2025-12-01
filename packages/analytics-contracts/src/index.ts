@@ -27,3 +27,11 @@ export type {
 
 // Adapter interface
 export type { SinkAdapter } from './adapter';
+
+// Plugin contracts manifest
+export {
+  pluginContractsManifest,
+  type PluginArtifactIds,
+  type PluginCommandIds,
+  type PluginRouteIds,
+} from './contract';

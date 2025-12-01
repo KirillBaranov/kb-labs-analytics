@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
 import nodePreset from '@kb-labs/devkit/tsup/node.js';
-import globby from 'globby';
+import { globbySync } from 'globby';
 
 export default defineConfig({
   ...nodePreset,
@@ -25,7 +25,7 @@ export default defineConfig({
     'src/rest/handlers/usage-workspaces-handler.ts',
     'src/rest/handlers/usage-users-handler.ts',
     'src/rest/handlers/usage-top-users-handler.ts',
-    ...globby.sync('src/cli/commands/*.ts'),
+    ...globbySync('src/cli/commands/*.ts'),
   ],
   tsconfig: "tsconfig.build.json", // Use build-specific tsconfig without paths
   // nodePreset already includes all workspace packages as external via tsup.external.json

@@ -28,10 +28,10 @@
         "packages/analytics-sdk-node/src/*"
       ],
       "@kb-labs/cli-commands": [
-        "../kb-labs-cli/packages/commands/src/index.ts"
+        "../kb-labs-cli/packages/cli-commands/src/index.ts"
       ],
       "@kb-labs/cli-commands/*": [
-        "../kb-labs-cli/packages/commands/src/*"
+        "../kb-labs-cli/packages/cli-commands/src/*"
       ],
       "@kb-labs/cli-core": [
         "../kb-labs-cli/packages/cli-core/src/index.ts"
@@ -48,14 +48,20 @@
       "@kb-labs/core-bundle/*": [
         "../kb-labs-core/packages/core-bundle/src/*"
       ],
+      "@kb-labs/core-framework": [
+        "../kb-labs-core/packages/core-framework/src/index.ts"
+      ],
+      "@kb-labs/core-framework/*": [
+        "../kb-labs-core/packages/core-framework/src/*"
+      ],
       "@kb-labs/core/*": [
         "../kb-labs-core/src/*"
       ],
       "@kb-labs/plugin-manifest": [
-        "../kb-labs-plugin/packages/manifest/src/index.ts"
+        "../kb-labs-plugin/packages/plugin-manifest/src/index.ts"
       ],
       "@kb-labs/plugin-manifest/*": [
-        "../kb-labs-plugin/packages/manifest/src/*"
+        "../kb-labs-plugin/packages/plugin-manifest/src/*"
       ],
       "@kb-labs/shared-command-kit": [
         "../kb-labs-shared/packages/shared-command-kit/src/index.ts"
