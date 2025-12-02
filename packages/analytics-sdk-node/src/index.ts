@@ -3,8 +3,8 @@
  * Node.js SDK with ergonomic helpers for emitting analytics events
  */
 
-import { Analytics, type AnalyticsOptions } from '@kb-labs/analytics-core';
-import type { AnalyticsEventV1, EmitResult, RunScope, EventActor, EventContext } from '@kb-labs/analytics-core';
+import { Analytics, type AnalyticsOptions, type RunScope } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1, EmitResult, EventActor, EventContext } from '@kb-labs/analytics-contracts';
 
 // Singleton instance (lazy-initialized)
 let analyticsInstance: Analytics | null = null;

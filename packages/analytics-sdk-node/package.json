@@ -38,6 +38,7 @@
     "test:watch": "vitest -c ../../vitest.config.ts"
   },
   "dependencies": {
+    "@kb-labs/analytics-contracts": "link:../analytics-contracts",
     "@kb-labs/analytics-core": "link:../analytics-core"
   },
   "devDependencies": {

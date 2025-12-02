@@ -38,13 +38,13 @@
     "test:watch": "vitest -c ../../vitest.config.ts"
   },
   "dependencies": {
+    "@kb-labs/analytics-adapters": "link:../analytics-adapters",
     "@kb-labs/core": "link:../../../kb-labs-core",
     "@kb-labs/core-bundle": "link:../../../kb-labs-core/packages/core-bundle",
     "zod": "^3.23.8",
     "uuidv7": "^1.0.0"
   },
   "devDependencies": {
-    "@kb-labs/analytics-adapters": "link:../analytics-adapters",
     "@kb-labs/devkit": "link:../../../kb-labs-devkit",
     "@types/node": "^24.3.3",
     "rimraf": "^6.0.1",
