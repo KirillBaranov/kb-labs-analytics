@@ -1,4 +1,4 @@
-import { createManifestV2 } from '@kb-labs/plugin-manifest';
+import { defineManifest } from '@kb-labs/shared-command-kit';
 import { pluginContractsManifest } from '@kb-labs/analytics-contracts';
 
 /**
@@ -135,7 +135,7 @@ const commands: CliCommands = [
   },
 ];
 
-export const manifest = createManifestV2<typeof pluginContractsManifest>({
+export const manifest = defineManifest({
   schema: 'kb.plugin/2',
   id: '@kb-labs/analytics',
   version: '0.1.0',

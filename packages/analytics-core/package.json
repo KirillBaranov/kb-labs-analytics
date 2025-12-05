@@ -38,7 +38,6 @@
     "test:watch": "vitest -c ../../vitest.config.ts"
   },
   "dependencies": {
-    "@kb-labs/analytics-adapters": "link:../analytics-adapters",
     "@kb-labs/core": "link:../../../kb-labs-core",
     "@kb-labs/core-bundle": "link:../../../kb-labs-core/packages/core-bundle",
     "zod": "^3.23.8",

@@ -48,12 +48,6 @@
       "@kb-labs/core-bundle/*": [
         "../kb-labs-core/packages/core-bundle/src/*"
       ],
-      "@kb-labs/core-framework": [
-        "../kb-labs-core/packages/core-framework/src/index.ts"
-      ],
-      "@kb-labs/core-framework/*": [
-        "../kb-labs-core/packages/core-framework/src/*"
-      ],
       "@kb-labs/core/*": [
         "../kb-labs-core/src/*"
       ],
