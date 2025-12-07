@@ -3,12 +3,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@kb-labs/analytics-adapters": [
-        "packages/analytics-adapters/src/index.ts"
-      ],
-      "@kb-labs/analytics-adapters/*": [
-        "packages/analytics-adapters/src/*"
-      ],
       "@kb-labs/analytics-contracts": [
         "packages/analytics-contracts/src/index.ts"
       ],
