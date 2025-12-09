@@ -1,6 +1,6 @@
 {
   "name": "@kb-labs/analytics-sdk-node",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "KB Labs Analytics - Node.js SDK with ergonomic helpers",
   "type": "module",
   "main": "./dist/index.js",

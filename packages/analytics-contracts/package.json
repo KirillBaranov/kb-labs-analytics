@@ -1,6 +1,6 @@
 {
   "name": "@kb-labs/analytics-contracts",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "Type definitions and contracts for KB Labs Analytics (shared between core and adapters)",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@kb-labs/analytics-adapters",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "KB Labs Analytics - sinks and middleware adapters",
   "type": "module",
   "main": "./dist/index.js",
