@@ -42,14 +42,7 @@
   },
   "dependencies": {
     "@kb-labs/analytics-contracts": "workspace:*",
-    "@kb-labs/analytics-core": "link:../analytics-core",
-    "@kb-labs/analytics-sdk-node": "link:../analytics-sdk-node",
-    "@kb-labs/cli-commands": "link:../../../kb-labs-cli/packages/cli-commands",
-    "@kb-labs/cli-core": "link:../../../kb-labs-cli/packages/cli-core",
-    "@kb-labs/core": "link:../../../kb-labs-core",
-    "@kb-labs/core-framework": "link:../../../kb-labs-core/packages/core-framework",
-    "@kb-labs/plugin-manifest": "link:../../../kb-labs-plugin/packages/plugin-manifest",
-    "@kb-labs/shared-command-kit": "link:../../../kb-labs-shared/packages/shared-command-kit",
+    "@kb-labs/sdk": "link:../../../kb-labs-sdk/packages/sdk",
     "zod": "^3.23.8"
   },
   "devDependencies": {

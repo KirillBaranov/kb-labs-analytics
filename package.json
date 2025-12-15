@@ -1,8 +1,8 @@
 {
-  "name": "@kb-labs/product-template",
+  "name": "@kb-labs/analytics",
   "version": "0.1.0",
   "private": true,
-  "description": "KB Labs product template — zero-config starter powered by @kb-labs/devkit.",
+  "description": "KB Labs analytics — is a collection of tools and services for tracking and analyzing data.",
   "type": "module",
   "author": {
     "name": "Kirill Baranov",
@@ -11,12 +11,12 @@
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kirill-baranov/kb-labs-product-template.git"
+    "url": "https://github.com/kirill-baranov/kb-labs-analytics.git"
   },
   "bugs": {
-    "url": "https://github.com/kirill-baranov/kb-labs-product-template/issues"
+    "url": "https://github.com/kirill-baranov/kb-labs-analytics/issues"
   },
-  "homepage": "https://github.com/kirill-baranov/kb-labs-product-template#readme",
+  "homepage": "https://github.com/kirill-baranov/kb-labs-analytics#readme",
   "workspaces": [
     "apps/*",
     "packages/*"
