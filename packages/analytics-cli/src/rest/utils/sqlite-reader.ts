@@ -4,7 +4,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
 import type { EventFilters } from './sink-reader';
 
 interface SqliteDatabase {

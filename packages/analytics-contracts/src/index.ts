@@ -1,10 +1,9 @@
 /**
  * @module @kb-labs/analytics-contracts
  * Shared type definitions and contracts for KB Labs Analytics
- * 
- * This package breaks the circular dependency between:
- * - @kb-labs/analytics-core
- * - @kb-labs/analytics-adapters
+ *
+ * This package provides types, schemas, and contracts for analytics without
+ * any implementation dependencies (no core, no SDK).
  */
 
 // Event types
@@ -17,6 +16,15 @@ export type {
   AnalyticsEventV1,
   EmitResult,
 } from './types';
+
+// Zod schemas and validation
+export {
+  AnalyticsEventV1Schema,
+  validateEvent,
+  safeValidateEvent,
+  validateEventDetailed,
+  formatValidationErrors,
+} from './schemas';
 
 // Configuration
 export type {

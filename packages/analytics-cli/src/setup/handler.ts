@@ -45,8 +45,6 @@ export async function run(ctx: SetupContext = {}) {
     ].join('\n')
   );
 
-  ctx.logger?.info('Analytics setup completed', { cwd, created });
-
   return {
     ok: true,
     analyticsDir,

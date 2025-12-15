@@ -1,9 +1,9 @@
 // CLI commands exports for analytics plugin
-export * from './commands/compact';
-export * from './commands/dlq';
-export * from './commands/emit';
-export * from './commands/flush';
-export * from './commands/stats';
-export * from './commands/status';
-export * from './commands/tail';
+export { run as compactRun, compactCommand } from './commands/compact';
+export { run as dlqRun, dlqCommand } from './commands/dlq';
+export { run as emitRun, emitCommand } from './commands/emit';
+export { run as flushRun, runFlushCommand } from './commands/flush';
+export { run as statsRun, statsCommand } from './commands/stats';
+export { run as statusRun, statusCommand } from './commands/status';
+export { run as tailRun, tailCommand } from './commands/tail';
 

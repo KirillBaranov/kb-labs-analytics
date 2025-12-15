@@ -1,6 +1,11 @@
 import { defineConfig } from 'tsup';
 import nodePreset from '@kb-labs/devkit/tsup/node.js';
-import { globbySync } from 'globby';
+import { readdirSync } from 'fs';
+import { join } from 'path';
+
+const commandFiles = readdirSync(join(process.cwd(), 'src/cli/commands'))
+  .filter(f => f.endsWith('.ts'))
+  .map(f => `src/cli/commands/${f}`);
 
 export default defineConfig({
   ...nodePreset,
@@ -25,7 +30,7 @@ export default defineConfig({
     'src/rest/handlers/usage-workspaces-handler.ts',
     'src/rest/handlers/usage-users-handler.ts',
     'src/rest/handlers/usage-top-users-handler.ts',
-    ...globbySync('src/cli/commands/*.ts'),
+    ...commandFiles,
   ],
   tsconfig: "tsconfig.build.json", // Use build-specific tsconfig without paths
   // nodePreset already includes all workspace packages as external via tsup.external.json

@@ -1,4 +1,5 @@
-import { defineManifest } from '@kb-labs/shared-command-kit';
+import type { ManifestV2 } from '@kb-labs/sdk';
+import { defineManifest } from '@kb-labs/sdk';
 import { pluginContractsManifest } from '@kb-labs/analytics-contracts';
 
 /**

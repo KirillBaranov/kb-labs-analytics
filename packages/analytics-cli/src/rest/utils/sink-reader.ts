@@ -3,11 +3,11 @@
  * Utilities for reading events from configured sinks
  */
 
-import { loadAnalyticsConfig } from '@kb-labs/analytics-core';
-import { findRepoRoot } from '@kb-labs/core';
+import { loadAnalyticsConfig } from '@kb-labs/analytics-contracts';
+import { findRepoRoot } from '@kb-labs/sdk';
 import { join } from 'node:path';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
-import type { SinkConfig } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
+import type { SinkConfig } from '@kb-labs/analytics-contracts';
 
 export interface EventFilters {
   type?: string | string[];
