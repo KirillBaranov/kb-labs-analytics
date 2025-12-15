@@ -1,17 +1,18 @@
 /**
  * @module @kb-labs/analytics-cli/rest/handlers/metrics-handler
  * Handler for performance metrics (latency, throughput, error rate)
+ *
+ * Calculates metrics from file-based event storage.
  */
 
-import { findRepoRoot } from '@kb-labs/core';
+import { findRepoRoot } from '@kb-labs/sdk';
 import { join } from 'node:path';
-import { Analytics } from '@kb-labs/analytics-core';
 import { getBestSink } from '../utils/sink-reader';
 import { readEventsFromSQLite } from '../utils/sqlite-reader';
 import { readEventsFromFS } from '../utils/fs-reader';
 import { readEventsFromBuffer } from '../utils/buffer-reader';
 import type { EventFilters } from '../utils/sink-reader';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
 
 type HandlerContext = {
   cwd?: string;
@@ -26,41 +27,34 @@ type MetricsQuery = {
 
 export async function handleMetrics(input: MetricsQuery, ctx: HandlerContext = {}) {
   const cwd = ctx.cwd ?? process.cwd();
-  
+
   // Parse query parameters
   const filters: EventFilters = {
     limit: 10000,
   };
-  
+
   if (input.timeRange) {
     filters.timeRange = input.timeRange as 'today' | 'week' | 'month' | string;
   }
-  
+
   if (input.type) {
     filters.type = input.type.includes(',') ? input.type.split(',').map(t => t.trim()) : input.type;
   }
-  
+
   if (input.product) {
     filters.product = input.product.includes(',') ? input.product.split(',').map(p => p.trim()) : input.product;
   }
-  
+
   if (input.workspace) {
     filters.workspace = input.workspace.includes(',') ? input.workspace.split(',').map(w => w.trim()) : input.workspace;
   }
 
-  // Get analytics instance for real-time metrics
-  const analytics = new Analytics({ cwd });
-  await analytics.init();
-  const metrics = analytics.getMetrics();
-  const backpressure = analytics.getBackpressureState();
-  await analytics.dispose();
-
   // Get events for calculating metrics
   const sink = await getBestSink(cwd);
   const repoRoot = await findRepoRoot(cwd).catch(() => cwd);
-  
+
   let events: AnalyticsEventV1[];
-  
+
   if (sink?.type === 'sqlite' && sink.path) {
     events = await readEventsFromSQLite(sink.path, filters);
   } else if (sink?.type === 'fs' && sink.path) {
@@ -164,16 +158,28 @@ export async function handleMetrics(input: MetricsQuery, ctx: HandlerContext = {
       return { x, y: rate * 100 }; // Convert to percentage
     });
 
+  // Calculate events per second (based on time range of events)
+  let eventsPerSecond = 0;
+  if (events.length > 1) {
+    const timestamps = events.map(e => new Date(e.ts).getTime()).sort((a, b) => a - b);
+    const firstTs = timestamps[0];
+    const lastTs = timestamps[timestamps.length - 1];
+    if (firstTs !== undefined && lastTs !== undefined) {
+      const timeRangeMs = lastTs - firstTs;
+      if (timeRangeMs > 0) {
+        eventsPerSecond = events.length / (timeRangeMs / 1000);
+      }
+    }
+  }
+
   // Format for keyvalue widget: { items: Array<{ key: string; value: string | number }> }
   const kpiItems = [
-    { key: 'Events/sec', value: metrics.eventsPerSecond.toFixed(2) },
-    { key: 'Queue Depth', value: metrics.queueDepth },
+    { key: 'Events/sec', value: eventsPerSecond.toFixed(2) },
+    { key: 'Total Events', value: events.length },
     { key: 'Error Rate', value: `${(errorRate * 100).toFixed(2)}%` },
     { key: 'Avg Latency', value: `${avgLatency.toFixed(0)}ms` },
-    { key: 'P50 Latency', value: `${p50Latency.toFixed(0)}ms` },
-    { key: 'P95 Latency', value: `${p95Latency.toFixed(0)}ms` },
-    { key: 'Backpressure', value: backpressure.level },
-    { key: 'Sampling Rate', value: `${(backpressure.samplingRate * 100).toFixed(1)}%` },
+    { key: 'P50 Latency', value: `${(p50Latency ?? 0).toFixed(0)}ms` },
+    { key: 'P95 Latency', value: `${(p95Latency ?? 0).toFixed(0)}ms` },
   ];
 
   // Return KPI metrics (keyvalue widget)

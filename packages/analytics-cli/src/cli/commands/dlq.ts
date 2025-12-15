@@ -2,17 +2,14 @@
  * DLQ command - Dead-Letter Queue operations
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
+import { defineCommand, findRepoRoot, useAnalytics, type CommandResult } from '@kb-labs/sdk';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { findRepoRoot } from '@kb-labs/core';
-import { emit } from '@kb-labs/analytics-sdk-node';
-import type { EnhancedCliContext } from '@kb-labs/shared-command-kit';
 
 /**
  * List DLQ files
  */
-async function listDlqFiles(ctx: EnhancedCliContext, jsonMode: boolean, cwd: string): Promise<{ ok: boolean; exitCode?: number }> {
+async function listDlqFiles(ctx: any, jsonMode: boolean, cwd: string): Promise<{ ok: boolean; exitCode?: number }> {
   try {
     let repoRoot: string;
     try {
@@ -79,7 +76,7 @@ async function listDlqFiles(ctx: EnhancedCliContext, jsonMode: boolean, cwd: str
  * Replay DLQ events
  */
 async function replayDlqEvents(
-  ctx: EnhancedCliContext,
+  ctx: any,
   jsonMode: boolean,
   cwd: string,
   filter?: string
@@ -109,6 +106,7 @@ async function replayDlqEvents(
 
     ctx.tracker.checkpoint('read');
 
+    const analytics = useAnalytics();
     let replayed = 0;
     let failed = 0;
 
@@ -134,9 +132,13 @@ async function replayDlqEvents(
           }
 
           // Replay event
-          const result = await emit(event);
-          if (result.queued) {
-            replayed++;
+          if (analytics) {
+            try {
+              await analytics.track(event.type, event.payload || {});
+              replayed++;
+            } catch {
+              failed++;
+            }
           } else {
             failed++;
           }
@@ -232,9 +234,9 @@ export const run = defineCommand<AnalyticsDlqFlags, AnalyticsDlqResult>({
 
     switch (subcommand) {
       case 'list':
-        return await listDlqFiles(ctx, flags.json, cwd);
+        return await listDlqFiles(ctx, !!flags.json, cwd);
       case 'replay':
-        return await replayDlqEvents(ctx, flags.json, cwd, filter);
+        return await replayDlqEvents(ctx, !!flags.json, cwd, filter);
       default:
         ctx.logger?.error('Unknown DLQ command', { subcommand });
         

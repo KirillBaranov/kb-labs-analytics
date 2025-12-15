@@ -2,10 +2,10 @@
  * Tail command - Tail events from buffer
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
+import { defineCommand, type CommandResult } from '@kb-labs/sdk';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { findRepoRoot } from '@kb-labs/core';
+import { findRepoRoot } from '@kb-labs/sdk';
 
 /**
  * Find latest segments in buffer directory

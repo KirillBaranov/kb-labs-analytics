@@ -1,59 +1,29 @@
 /**
  * Stats command - Show metrics statistics
+ *
+ * Note: Real-time metrics were previously provided by analytics-core.
+ * After architecture simplification, this command shows file-based statistics.
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
-import { Analytics } from '@kb-labs/analytics-core';
-
-/**
- * Parse interval string (e.g. "5s", "10s", "1m")
- */
-function parseInterval(interval: string): number {
-  const match = interval.match(/^(\d+)(s|m|h)$/);
-  if (!match) {
-    return 0;
-  }
-
-  const value = parseInt(match[1] || '0', 10);
-  const unit = match[2];
-
-  switch (unit) {
-    case 's':
-      return value * 1000;
-    case 'm':
-      return value * 60 * 1000;
-    case 'h':
-      return value * 60 * 60 * 1000;
-    default:
-      return 0;
-  }
-}
+import { defineCommand, findRepoRoot, type CommandResult } from '@kb-labs/sdk';
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 
 type AnalyticsStatsFlags = {
-  interval: { type: 'string'; description?: string };
   json: { type: 'boolean'; description?: string; default?: boolean };
 };
 
 type AnalyticsStatsResult = CommandResult & {
-  metrics?: {
-    eventsPerSecond: number;
-    queueDepth: number;
-    errorRate: number;
-  };
-  backpressure?: {
-    level: string;
-    samplingRate: number;
-    dropCount: number;
+  stats?: {
+    bufferFiles: number;
+    dlqFiles: number;
+    totalSizeBytes: number;
   };
 };
 
 export const run = defineCommand<AnalyticsStatsFlags, AnalyticsStatsResult>({
   name: 'analytics:stats',
   flags: {
-    interval: {
-      type: 'string',
-      description: 'Update interval (e.g. 5s, 10s)',
-    },
     json: {
       type: 'boolean',
       description: 'Return JSON payload',
@@ -61,91 +31,87 @@ export const run = defineCommand<AnalyticsStatsFlags, AnalyticsStatsResult>({
     },
   },
   async handler(ctx, argv, flags) {
-    const interval = flags.interval;
     const cwd = ctx?.cwd || process.cwd();
-    
-    ctx.logger?.info('Analytics stats started', { interval });
+
+    ctx.logger?.info('Analytics stats started');
 
     ctx.tracker.checkpoint('init');
 
     try {
-      const analytics = new Analytics({ cwd });
-      await analytics.init();
+      let repoRoot: string;
+      try {
+        repoRoot = await findRepoRoot(cwd);
+      } catch {
+        repoRoot = cwd;
+      }
 
-      const showStats = () => {
-        const metrics = analytics.getMetrics();
-        const backpressure = analytics.getBackpressureState();
+      const analyticsDir = join(repoRoot, '.kb/analytics');
+      const bufferDir = join(analyticsDir, 'buffer');
+      const dlqDir = join(analyticsDir, 'dlq');
 
-        if (flags.json) {
-          ctx.output?.json({
-            ok: true,
-            metrics: {
-              eventsPerSecond: metrics.eventsPerSecond,
-              queueDepth: metrics.queueDepth,
-              errorRate: metrics.errorRate,
-            },
-            backpressure: {
-              level: backpressure.level,
-              samplingRate: backpressure.samplingRate,
-              dropCount: backpressure.dropCount,
-            },
-          });
-        } else {
-          const items: string[] = [
-            `Events/sec: ${metrics.eventsPerSecond.toFixed(2)}`,
-            `Queue depth: ${metrics.queueDepth}`,
-            `Error rate: ${(metrics.errorRate * 100).toFixed(2)}%`,
-            `Backpressure: ${backpressure.level}`,
-            `Sampling rate: ${(backpressure.samplingRate * 100).toFixed(1)}%`,
-            `Drops: ${backpressure.dropCount}`,
-          ];
+      // Count buffer files
+      const bufferFiles = await readdir(bufferDir).catch(() => []);
+      const jsonlBufferFiles = bufferFiles.filter((f) => f.endsWith('.jsonl'));
 
-          const outputText = ctx.output?.ui.sideBox({
-            title: 'Analytics Stats',
-            sections: [
-              {
-                items,
-              },
-            ],
-            status: 'info',
-          });
-          ctx.output?.write(outputText);
+      // Count DLQ files
+      const dlqFiles = await readdir(dlqDir).catch(() => []);
+      const jsonlDlqFiles = dlqFiles.filter((f) => f.endsWith('.jsonl'));
+
+      // Calculate total size
+      let totalSizeBytes = 0;
+      for (const file of jsonlBufferFiles) {
+        const stats = await stat(join(bufferDir, file)).catch(() => null);
+        if (stats) {
+          totalSizeBytes += stats.size;
         }
-      };
-
-      // Show stats once
-      showStats();
-
-      // If interval specified, show stats periodically
-      if (interval) {
-        const intervalMs = parseInterval(interval);
-        if (intervalMs > 0) {
-          ctx.output?.info(`Updating every ${interval}... (Press Ctrl+C to stop)`);
-          const intervalId = setInterval(() => {
-            ctx.output?.write('\n'); // Add spacing between updates
-            showStats();
-          }, intervalMs);
-
-          // Keep process alive
-          process.stdin.resume();
-          
-          // Cleanup on exit
-          process.on('SIGINT', () => {
-            clearInterval(intervalId);
-            analytics.dispose().then(() => process.exit(0));
-          });
+      }
+      for (const file of jsonlDlqFiles) {
+        const stats = await stat(join(dlqDir, file)).catch(() => null);
+        if (stats) {
+          totalSizeBytes += stats.size;
         }
       }
 
       ctx.tracker.checkpoint('complete');
 
-      await analytics.dispose();
+      const stats = {
+        bufferFiles: jsonlBufferFiles.length,
+        dlqFiles: jsonlDlqFiles.length,
+        totalSizeBytes,
+      };
+
+      if (flags.json) {
+        ctx.output?.json({
+          ok: true,
+          stats,
+        });
+        return { ok: true, stats };
+      }
+
+      const items: string[] = [
+        `Buffer files: ${stats.bufferFiles}`,
+        `DLQ files: ${stats.dlqFiles}`,
+        `Total size: ${(stats.totalSizeBytes / 1024).toFixed(2)} KB`,
+      ];
+
+      const outputText = ctx.output?.ui.sideBox({
+        title: 'Analytics Stats',
+        sections: [
+          {
+            items,
+          },
+        ],
+        status: 'info',
+        timing: ctx.tracker.total(),
+      });
+      ctx.output?.write(outputText);
+
       ctx.logger?.info('Analytics stats completed');
-      return { ok: true };
+      return { ok: true, stats };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       ctx.logger?.error('Analytics stats failed', { error: errorMessage });
-      
+
       if (flags.json) {
         ctx.output?.json({
           ok: false,

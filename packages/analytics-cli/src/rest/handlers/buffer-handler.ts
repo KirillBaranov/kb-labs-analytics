@@ -1,7 +1,7 @@
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { AnalyticsBufferStatusSchema } from '../../contracts/analytics.schema';
-import { findRepoRoot } from '@kb-labs/core';
+import { findRepoRoot } from '@kb-labs/sdk';
 
 type HandlerContext = {
   cwd?: string;

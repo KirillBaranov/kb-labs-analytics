@@ -1,12 +1,12 @@
 /**
  * Status command - Show analytics status
+ *
+ * Shows file-based buffer statistics after architecture simplification.
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
+import { defineCommand, findRepoRoot, type CommandResult } from '@kb-labs/sdk';
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { findRepoRoot } from '@kb-labs/core';
-import { Analytics } from '@kb-labs/analytics-core';
 
 type AnalyticsStatusFlags = {
   json: { type: 'boolean'; description?: string; default?: boolean };
@@ -15,17 +15,11 @@ type AnalyticsStatusFlags = {
 type AnalyticsStatusResult = CommandResult & {
   buffer?: {
     segments: number;
-    totalSize: number;
+    totalSizeBytes: number;
   };
-  metrics?: {
-    eventsPerSecond: number;
-    queueDepth: number;
-    errorRate: number;
-  };
-  backpressure?: {
-    level: string;
-    samplingRate: number;
-    dropCount: number;
+  dlq?: {
+    files: number;
+    totalSizeBytes: number;
   };
 };
 
@@ -40,20 +34,12 @@ export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
   },
   async handler(ctx, argv, flags) {
     const cwd = ctx?.cwd || process.cwd();
-    
+
     ctx.logger?.info('Analytics status started', { cwd });
 
     ctx.tracker.checkpoint('init');
 
     try {
-      const analytics = new Analytics({ cwd });
-      await analytics.init();
-
-      // Get metrics
-      const metrics = analytics.getMetrics();
-      const backpressure = analytics.getBackpressureState();
-
-      // Buffer status
       let repoRoot: string;
       try {
         repoRoot = await findRepoRoot(cwd);
@@ -61,48 +47,55 @@ export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
         repoRoot = cwd;
       }
 
-      const bufferDir = join(repoRoot, '.kb/analytics/buffer');
+      const analyticsDir = join(repoRoot, '.kb/analytics');
+      const bufferDir = join(analyticsDir, 'buffer');
+      const dlqDir = join(analyticsDir, 'dlq');
+
+      // Buffer status
       const bufferFiles = await readdir(bufferDir).catch(() => []);
       const segments = bufferFiles.filter((f) => f.endsWith('.jsonl'));
 
-      let totalSize = 0;
+      let bufferSize = 0;
       for (const file of segments) {
         const stats = await stat(join(bufferDir, file)).catch(() => null);
         if (stats) {
-          totalSize += stats.size;
+          bufferSize += stats.size;
+        }
+      }
+
+      // DLQ status
+      const dlqFiles = await readdir(dlqDir).catch(() => []);
+      const dlqSegments = dlqFiles.filter((f) => f.endsWith('.jsonl'));
+
+      let dlqSize = 0;
+      for (const file of dlqSegments) {
+        const stats = await stat(join(dlqDir, file)).catch(() => null);
+        if (stats) {
+          dlqSize += stats.size;
         }
       }
 
       ctx.tracker.checkpoint('complete');
 
-      ctx.logger?.info('Analytics status completed', { 
-        segmentsCount: segments.length,
-        totalSize,
-        eventsPerSecond: metrics.eventsPerSecond,
-        queueDepth: metrics.queueDepth,
-      });
+      const result = {
+        buffer: {
+          segments: segments.length,
+          totalSizeBytes: bufferSize,
+        },
+        dlq: {
+          files: dlqSegments.length,
+          totalSizeBytes: dlqSize,
+        },
+      };
+
+      ctx.logger?.info('Analytics status completed', result);
 
       if (flags.json) {
         ctx.output?.json({
           ok: true,
-          buffer: {
-            segments: segments.length,
-            totalSize,
-          },
-          metrics: {
-            eventsPerSecond: metrics.eventsPerSecond,
-            queueDepth: metrics.queueDepth,
-            errorRate: metrics.errorRate,
-          },
-          backpressure: {
-            level: backpressure.level,
-            samplingRate: backpressure.samplingRate,
-            dropCount: backpressure.dropCount,
-          },
-          circuitBreakers: metrics.circuitBreakerStates,
+          ...result,
         });
-        await analytics.dispose();
-        return { ok: true };
+        return { ok: true, ...result };
       }
 
       const sections: Array<{ header?: string; items: string[] }> = [];
@@ -112,48 +105,18 @@ export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
         header: 'Buffer',
         items: [
           `Segments: ${segments.length}`,
-          `Total size: ${(totalSize / 1024).toFixed(2)} KB`,
+          `Total size: ${(bufferSize / 1024).toFixed(2)} KB`,
         ],
       });
 
-      // Metrics section
+      // DLQ section
       sections.push({
-        header: 'Metrics',
+        header: 'Dead Letter Queue',
         items: [
-          `Events/sec: ${metrics.eventsPerSecond.toFixed(2)}`,
-          `Queue depth: ${metrics.queueDepth}`,
-          `Error rate: ${(metrics.errorRate * 100).toFixed(2)}%`,
+          `Files: ${dlqSegments.length}`,
+          `Total size: ${(dlqSize / 1024).toFixed(2)} KB`,
         ],
       });
-
-      // Backpressure section
-      sections.push({
-        header: 'Backpressure',
-        items: [
-          `Level: ${backpressure.level}`,
-          `Sampling rate: ${(backpressure.samplingRate * 100).toFixed(1)}%`,
-          `Drops: ${backpressure.dropCount}`,
-        ],
-      });
-
-      // Circuit breakers section
-      const breakerStates = Object.entries(metrics.circuitBreakerStates);
-      if (breakerStates.length > 0) {
-        const breakerItems: string[] = [];
-        for (const [sinkId, state] of breakerStates) {
-          const color =
-            state === 'closed'
-              ? ctx.output?.ui.colors.success
-              : state === 'open'
-                ? ctx.output?.ui.colors.error
-                : ctx.output?.ui.colors.warn;
-          breakerItems.push(`${sinkId}: ${color ? color(state) : state}`);
-        }
-        sections.push({
-          header: 'Circuit Breakers',
-          items: breakerItems,
-        });
-      }
 
       const outputText = ctx.output?.ui.sideBox({
         title: 'Analytics Status',
@@ -163,12 +126,11 @@ export const run = defineCommand<AnalyticsStatusFlags, AnalyticsStatusResult>({
       });
       ctx.output?.write(outputText);
 
-      await analytics.dispose();
-      return { ok: true };
+      return { ok: true, ...result };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       ctx.logger?.error('Analytics status failed', { error: errorMessage });
-      
+
       if (flags.json) {
         ctx.output?.json({
           ok: false,

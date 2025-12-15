@@ -2,8 +2,7 @@
  * Flush command - Force flush buffer to sinks
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
-import { flush } from '@kb-labs/analytics-sdk-node';
+import { defineCommand, useAnalytics, type CommandResult } from '@kb-labs/sdk';
 
 type AnalyticsFlushFlags = {
   json: { type: 'boolean'; description?: string; default?: boolean };
@@ -27,7 +26,10 @@ export const run = defineCommand<AnalyticsFlushFlags, AnalyticsFlushResult>({
 
     ctx.tracker.checkpoint('flush');
 
-    await flush();
+    const analytics = useAnalytics();
+    if (analytics) {
+      await analytics.flush();
+    }
 
     ctx.tracker.checkpoint('complete');
     

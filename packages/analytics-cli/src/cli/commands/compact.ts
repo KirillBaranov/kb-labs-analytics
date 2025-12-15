@@ -2,11 +2,9 @@
  * Compact command - Compact old segments
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
+import { defineCommand, findRepoRoot, type CommandResult } from '@kb-labs/sdk';
 import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { findRepoRoot } from '@kb-labs/core';
-import { loadAnalyticsConfig } from '@kb-labs/analytics-core';
 
 type AnalyticsCompactFlags = {
   'dry-run': { type: 'boolean'; description?: string; default?: boolean };
@@ -41,10 +39,8 @@ export const run = defineCommand<AnalyticsCompactFlags, AnalyticsCompactResult>(
 
     ctx.tracker.checkpoint('load');
 
-    // Load config to get retention settings
-    const cwdStr = typeof cwd === 'string' ? cwd : process.cwd();
-    const { config } = await loadAnalyticsConfig(cwdStr);
-    const retentionDays = config.retention?.wal?.days || 7;
+    // Load config to get retention settings (ctx.config is already loaded by defineCommand)
+    const retentionDays = (ctx.config as any)?.analytics?.retention?.days || 7;
 
     // Find repo root
     let repoRoot: string;

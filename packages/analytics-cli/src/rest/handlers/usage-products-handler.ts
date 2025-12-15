@@ -3,14 +3,14 @@
  * Handler for usage by products (bar chart)
  */
 
-import { findRepoRoot } from '@kb-labs/core';
+import { findRepoRoot } from '@kb-labs/sdk';
 import { join } from 'node:path';
 import { getBestSink } from '../utils/sink-reader';
 import { readEventsFromSQLite } from '../utils/sqlite-reader';
 import { readEventsFromFS } from '../utils/fs-reader';
 import { readEventsFromBuffer } from '../utils/buffer-reader';
 import type { EventFilters } from '../utils/sink-reader';
-import type { AnalyticsEventV1 } from '@kb-labs/analytics-core';
+import type { AnalyticsEventV1 } from '@kb-labs/analytics-contracts';
 
 type HandlerContext = {
   cwd?: string;

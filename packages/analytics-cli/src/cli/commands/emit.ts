@@ -2,8 +2,7 @@
  * Emit command - Emit a test event
  */
 
-import { defineCommand, type CommandResult } from '@kb-labs/shared-command-kit';
-import { emit } from '@kb-labs/analytics-sdk-node';
+import { defineCommand, useAnalytics, type CommandResult } from '@kb-labs/sdk';
 
 type AnalyticsEmitFlags = {
   type: { type: 'string'; description?: string; default?: string };
@@ -63,19 +62,23 @@ export const run = defineCommand<AnalyticsEmitFlags, AnalyticsEmitResult>({
 
     ctx.tracker.checkpoint('emit');
 
-    // Emit event
-    const result = await emit({
-      type: eventType,
-      source: {
-        product: '@kb-labs/analytics-cli',
-        version: '0.1.0',
-      },
-      payload,
-    });
-    
-    ctx.tracker.checkpoint('complete');
-    
-    ctx.logger?.info('Analytics emit completed', { 
+    // Emit event via platform analytics adapter
+    const analytics = useAnalytics();
+    let result: { queued: boolean; reason?: string } = { queued: false, reason: 'Unknown error' };
+
+    if (!analytics) {
+      result = { queued: false, reason: 'Analytics not available' };
+    } else {
+      try {
+        await analytics.track(eventType, payload);
+        result = { queued: true };
+        ctx.tracker.checkpoint('complete');
+      } catch (error) {
+        result = { queued: false, reason: error instanceof Error ? error.message : 'Unknown error' };
+      }
+    }
+
+    ctx.logger?.info('Analytics emit completed', {
       queued: result.queued,
       reason: result.reason,
     });

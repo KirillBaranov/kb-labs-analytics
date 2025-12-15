@@ -3,7 +3,7 @@
  * Handler for listing analytics events
  */
 
-import { findRepoRoot } from '@kb-labs/core';
+import { findRepoRoot } from '@kb-labs/sdk';
 import { join } from 'node:path';
 import { getBestSink } from '../utils/sink-reader';
 import { readEventsFromSQLite } from '../utils/sqlite-reader';
